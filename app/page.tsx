@@ -1,9 +1,10 @@
 import { fetchNotionDataset } from "@/lib/notion";
 import Dashboard from "@/components/Dashboard";
 
-// Re-fetch from Notion at most once per minute (public page, no auth, so
-// this keeps load on the Notion API low while staying reasonably fresh).
-export const revalidate = 60;
+// Render on every request instead of at build time: this is a public,
+// low-traffic dashboard, and always reading live env vars / fresh Notion
+// data here is simpler and less surprising than debugging stale ISR output.
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   let dataset;
@@ -12,6 +13,7 @@ export default async function Home() {
   try {
     dataset = await fetchNotionDataset();
   } catch (err) {
+    console.error("fetchNotionDataset failed:", err);
     error =
       err instanceof Error && err.message === "MISSING_NOTION_TOKEN"
         ? "Thiếu biến môi trường NOTION_TOKEN."

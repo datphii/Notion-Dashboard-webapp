@@ -71,7 +71,8 @@ Vercel free tier là đủ cho nhu cầu này (Next.js server components + reval
 - **Lịch**: hiển thị theo bất kỳ cột ngày tháng nào (vd: Deadline), có thẻ "Chưa có ngày" cho
   các mục chưa set deadline.
 
-Dữ liệu tự làm mới mỗi 60 giây (ISR), hoặc bấm nút **Làm mới** để tải lại ngay.
+Mỗi lần có người mở trang, server sẽ gọi Notion API lấy dữ liệu mới nhất (không cache), hoặc
+bấm nút **Làm mới** để tải lại ngay.
 
 ## Thêm database khác / nhiều database
 
