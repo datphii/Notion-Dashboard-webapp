@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { NotionDataset, PropertySchema, WorkspaceMember } from "@/lib/notion";
@@ -33,6 +33,22 @@ export default function Dashboard({
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Formatted with the viewer's local timezone, which is only known after
+  // mount - computing it during the render that gets sent to both the
+  // server and the client would produce different strings there (Vercel's
+  // server runs in UTC) and trip a React hydration mismatch.
+  const [fetchedAtLabel, setFetchedAtLabel] = useState<string | null>(null);
+  useEffect(() => {
+    setFetchedAtLabel(
+      new Date(dataset.fetchedAt).toLocaleString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "2-digit",
+        month: "2-digit",
+      })
+    );
+  }, [dataset.fetchedAt]);
 
   const filterableProps = useMemo(
     () => dataset.schema.filter(isFilterable),
@@ -113,15 +129,7 @@ export default function Dashboard({
           </a>
         </div>
         <div className="flex items-center gap-3 text-xs text-gray-400">
-          <span>
-            Cập nhật lúc{" "}
-            {new Date(dataset.fetchedAt).toLocaleString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              day: "2-digit",
-              month: "2-digit",
-            })}
-          </span>
+          <span suppressHydrationWarning>Cập nhật lúc {fetchedAtLabel ?? "..."}</span>
           <button
             onClick={() => startTransition(() => router.refresh())}
             disabled={isPending}

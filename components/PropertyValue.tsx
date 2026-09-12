@@ -3,14 +3,19 @@
 import type { PropertyType, Person } from "@/lib/notion";
 import { colorClasses, solidColorClasses } from "@/lib/colors";
 
+// Manual UTC-based formatting instead of toLocaleDateString: the same ISO
+// string must render identically during server-side rendering (Vercel's
+// server, UTC) and client hydration (the viewer's local timezone), otherwise
+// React throws a hydration mismatch. Notion dates are calendar dates, not
+// timezone-relative instants, so UTC getters are also the correct choice
+// here regardless of hydration.
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 export function Badge({
