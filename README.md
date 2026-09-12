@@ -79,6 +79,11 @@ Vercel free tier là đủ cho nhu cầu này.
   trong Notion.
 - **Lịch**: hiển thị theo bất kỳ cột ngày tháng nào (vd: Deadline), có thẻ "Chưa có ngày" cho
   các mục chưa set deadline.
+- **Thống kê**: biểu đồ donut + thanh phần trăm theo bất kỳ cột select/status nào (mặc định
+  Status), giúp nhìn nhanh tiến độ và tỷ lệ từng hạng mục.
+
+Dưới màn hình tablet, Bảng tự chuyển sang dạng thẻ xếp dọc thay vì bảng cuộn ngang, để không bị
+mất cột nào khi xem trên điện thoại.
 
 Mỗi lần có người mở trang, server sẽ gọi Notion API lấy dữ liệu mới nhất (không cache), hoặc
 bấm nút **Làm mới** để tải lại ngay.
@@ -100,7 +105,14 @@ thêm video mới**, cần đăng nhập bằng Tên + mã PIN ở trang `/login
   khoản, đổi vai trò Admin/Editor, bật/tắt Active — không cần sửa code hay redeploy.
 - Ở Bảng, khi đã đăng nhập, bấm vào 1 ô để sửa (chọn giá trị có sẵn hoặc gõ giá trị mới cho các
   cột dạng select), bấm **+ Thêm video** để tạo mục mới.
-- Kanban và Lịch hiện vẫn ở chế độ chỉ xem; sửa dữ liệu thực hiện ở view Bảng.
+- Ở Kanban, khi nhóm theo cột select/status, có thể **kéo-thả thẻ sang cột khác** để đổi giá trị
+  đó (vd kéo sang cột "Hoàn thành" để đổi Status).
+- **Nhập hàng loạt từ Excel**: nút "Nhập từ Excel" cạnh "+ Thêm video" cho phép tải lên 1 file
+  .xlsx để tạo nhiều video cùng lúc thay vì thêm thủ công từng cái. Bấm "Tải file mẫu" để lấy
+  đúng định dạng cột (khớp tên các cột trong database), điền dữ liệu rồi tải lên — app sẽ hiện
+  bản xem trước, cảnh báo giá trị nào không khớp (vd tên người không có trong workspace), trước
+  khi tạo thật trên Notion. Việc đọc file diễn ra ngay trong trình duyệt, không gửi file lên
+  server; giới hạn 300 dòng/lần.
 
 ## Thêm database khác / nhiều database
 

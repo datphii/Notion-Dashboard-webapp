@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { NotionDataset, PropertySchema, WorkspaceMember } from "@/lib/notion";
 import type { SessionPayload } from "@/lib/session";
 import { groupableProperties, buildGroups } from "@/lib/group";
@@ -12,6 +13,11 @@ import BoardView from "./BoardView";
 import CalendarView from "./CalendarView";
 import StatsView from "./StatsView";
 import AddRowModal from "./AddRowModal";
+
+// Pulls in the xlsx parsing library, so keep it out of the bundle every
+// visitor downloads and only load it when someone actually opens the
+// import dialog.
+const ImportExcelModal = dynamic(() => import("./ImportExcelModal"), { ssr: false });
 
 type ViewMode = "table" | "board" | "calendar" | "stats";
 
@@ -34,6 +40,7 @@ export default function Dashboard({
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Formatted with the viewer's local timezone, which is only known after
   // mount - computing it during the render that gets sent to both the
@@ -263,12 +270,20 @@ export default function Dashboard({
         )}
 
         {currentUser && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500"
-          >
-            + Thêm video
-          </button>
+          <>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500"
+            >
+              + Thêm video
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-neutral-800"
+            >
+              Nhập từ Excel
+            </button>
+          </>
         )}
 
         <span className="ml-auto rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500 dark:bg-neutral-800 dark:text-gray-400">
@@ -327,6 +342,13 @@ export default function Dashboard({
           schema={dataset.schema}
           workspaceMembers={workspaceMembers}
           onClose={() => setShowAddModal(false)}
+        />
+      )}
+      {showImportModal && (
+        <ImportExcelModal
+          schema={dataset.schema}
+          workspaceMembers={workspaceMembers}
+          onClose={() => setShowImportModal(false)}
         />
       )}
     </main>
