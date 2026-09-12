@@ -6,3 +6,9 @@ html,
 body {
   @apply bg-gray-50 text-gray-900 dark:bg-neutral-950 dark:text-gray-100;
 }
+
+/* Some browsers' default UA stylesheet centers <th> text; keep table
+   headers left-aligned by default regardless of Tailwind utility order. */
+th {
+  text-align: left;
+}

@@ -133,16 +133,16 @@ export default function Dashboard({
           <button
             onClick={() => startTransition(() => router.refresh())}
             disabled={isPending}
-            className="rounded-md border border-gray-300 px-3 py-1 font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-neutral-800"
+            className="rounded-lg border border-gray-300 px-3 py-1 font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-neutral-800"
           >
             {isPending ? "Đang tải..." : "Làm mới"}
           </button>
           {currentUser ? (
             <span className="flex items-center gap-2">
-              <span className="font-medium text-gray-600 dark:text-gray-300">
+              <span className="flex items-center rounded-full bg-gray-100 py-1 pl-2.5 pr-1 font-medium text-gray-600 dark:bg-neutral-800 dark:text-gray-300">
                 {currentUser.name}
                 {currentUser.role === "Admin" && (
-                  <span className="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+                  <span className="ml-1.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
                     Admin
                   </span>
                 )}
@@ -150,14 +150,14 @@ export default function Dashboard({
               {currentUser.role === "Admin" && (
                 <Link
                   href="/admin/users"
-                  className="rounded-md border border-gray-300 px-2 py-1 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-neutral-800"
+                  className="rounded-lg border border-gray-300 px-2 py-1 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-neutral-800"
                 >
                   Quản lý tài khoản
                 </Link>
               )}
               <button
                 onClick={logout}
-                className="rounded-md border border-gray-300 px-2 py-1 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-neutral-800"
+                className="rounded-lg border border-gray-300 px-2 py-1 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-neutral-800"
               >
                 Đăng xuất
               </button>
@@ -165,7 +165,7 @@ export default function Dashboard({
           ) : (
             <Link
               href="/login"
-              className="rounded-md border border-gray-300 px-3 py-1 font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-neutral-800"
+              className="rounded-lg border border-gray-300 px-3 py-1 font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-neutral-800"
             >
               Đăng nhập
             </Link>
@@ -173,8 +173,8 @@ export default function Dashboard({
         </div>
       </header>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-md border border-gray-300 p-0.5 dark:border-gray-700">
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-neutral-900">
+        <div className="flex rounded-lg border border-gray-300 p-0.5 dark:border-gray-700">
           {(
             [
               ["table", "Bảng"],
@@ -185,9 +185,9 @@ export default function Dashboard({
             <button
               key={mode}
               onClick={() => setView(mode)}
-              className={`rounded px-3 py-1 text-sm font-medium ${
+              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
                 view === mode
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white shadow-sm"
                   : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-neutral-800"
               }`}
             >
@@ -200,7 +200,7 @@ export default function Dashboard({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Tìm theo tiêu đề..."
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm dark:border-gray-700 dark:bg-neutral-900"
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none transition-shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-neutral-950 dark:focus:ring-blue-950"
         />
 
         {filterableProps.map((prop) => (
@@ -210,7 +210,7 @@ export default function Dashboard({
             onChange={(e) =>
               setActiveFilters((prev) => ({ ...prev, [prop.name]: e.target.value }))
             }
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-neutral-900"
+            className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none transition-shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-neutral-950 dark:focus:ring-blue-950"
           >
             <option value="">{prop.name}: Tất cả</option>
             {prop.options?.map((o) => (
@@ -225,7 +225,7 @@ export default function Dashboard({
           <select
             value={groupByName}
             onChange={(e) => setGroupByName(e.target.value)}
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-neutral-900"
+            className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none transition-shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-neutral-950 dark:focus:ring-blue-950"
           >
             {groupableProps.map((p) => (
               <option key={p.name} value={p.name}>
@@ -239,7 +239,7 @@ export default function Dashboard({
           <select
             value={dateFieldName}
             onChange={(e) => setDateFieldName(e.target.value)}
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-neutral-900"
+            className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none transition-shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-neutral-950 dark:focus:ring-blue-950"
           >
             {dateProps.map((p) => (
               <option key={p.name} value={p.name}>
@@ -252,13 +252,13 @@ export default function Dashboard({
         {currentUser && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500"
           >
             + Thêm video
           </button>
         )}
 
-        <span className="ml-auto text-xs text-gray-400">
+        <span className="ml-auto rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500 dark:bg-neutral-800 dark:text-gray-400">
           {filteredRows.length} / {dataset.rows.length} mục
         </span>
       </div>

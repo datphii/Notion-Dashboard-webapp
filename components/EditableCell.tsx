@@ -11,10 +11,12 @@ export default function EditableCell({
   row,
   column,
   workspaceMembers,
+  align = "left",
 }: {
   row: NotionRow;
   column: PropertySchema;
   workspaceMembers?: WorkspaceMember[];
+  align?: "left" | "right";
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -50,6 +52,7 @@ export default function EditableCell({
     return (
       <input
         type="checkbox"
+        className="h-4 w-4 cursor-pointer accent-blue-600"
         checked={current}
         disabled={saving}
         onChange={async (e) => {
@@ -66,49 +69,70 @@ export default function EditableCell({
     );
   }
 
-  if (!editing) {
-    return (
+  return (
+    <div className="relative">
       <button
         type="button"
         onClick={() => {
           setLocalValue(toEditValue(column.type, row.properties[column.name]));
+          setError(null);
           setEditing(true);
         }}
-        className="block w-full rounded px-1 py-0.5 text-left hover:bg-blue-50 dark:hover:bg-blue-950/30"
+        className="group/cell flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-blue-50 dark:hover:bg-blue-950/30"
         title="Bấm để chỉnh sửa"
       >
-        <PropertyValue type={column.type} value={row.properties[column.name]} />
+        <span className="min-w-0 flex-1">
+          <PropertyValue type={column.type} value={row.properties[column.name]} />
+        </span>
+        <svg
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className="h-3.5 w-3.5 shrink-0 text-gray-300 opacity-0 transition-opacity group-hover/cell:opacity-100 dark:text-gray-600"
+        >
+          <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-9.5 9.5a1 1 0 0 1-.464.263l-3.5 1a1 1 0 0 1-1.237-1.237l1-3.5a1 1 0 0 1 .263-.464l9.5-9.5Z" />
+        </svg>
       </button>
-    );
-  }
 
-  return (
-    <div className="min-w-[11rem] rounded-md border border-blue-300 bg-blue-50/50 p-1.5 dark:border-blue-800 dark:bg-blue-950/20">
-      <PropertyEditor
-        type={column.type}
-        options={column.options}
-        value={localValue}
-        onChange={setLocalValue}
-        workspaceMembers={workspaceMembers}
-        listId={`dl-${row.id}-${column.name}`}
-      />
-      {error && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>}
-      <div className="mt-1.5 flex gap-1">
-        <button
-          onClick={save}
-          disabled={saving}
-          className="rounded bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
-        >
-          {saving ? "Đang lưu..." : "Lưu"}
-        </button>
-        <button
-          onClick={() => setEditing(false)}
-          disabled={saving}
-          className="rounded border border-gray-300 px-2 py-0.5 text-xs dark:border-gray-700"
-        >
-          Huỷ
-        </button>
-      </div>
+      {editing && (
+        <>
+          {/* Full-screen backdrop, click-to-cancel; keeps the popover from
+              disturbing table layout since it sits outside normal flow. */}
+          <div className="fixed inset-0 z-30" onClick={() => setEditing(false)} />
+          <div
+            className={`absolute top-full z-40 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-neutral-900 ${
+              align === "right" ? "right-0" : "left-0"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+          >
+            <PropertyEditor
+              type={column.type}
+              options={column.options}
+              value={localValue}
+              onChange={setLocalValue}
+              workspaceMembers={workspaceMembers}
+              listId={`dl-${row.id}-${column.name}`}
+            />
+            {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
+            <div className="mt-2 flex gap-1.5">
+              <button
+                onClick={save}
+                disabled={saving}
+                className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+              >
+                {saving ? "Đang lưu..." : "Lưu"}
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                disabled={saving}
+                className="rounded-md border border-gray-300 px-2.5 py-1 text-xs hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-neutral-800"
+              >
+                Huỷ
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

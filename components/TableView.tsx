@@ -37,15 +37,15 @@ export default function TableView({
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
       <table className="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-800">
-        <thead className="bg-gray-100 dark:bg-neutral-900">
+        <thead className="bg-gray-50 dark:bg-neutral-900">
           <tr>
-            <th className="sticky left-0 z-10 bg-gray-100 px-4 py-2 text-left font-semibold dark:bg-neutral-900">
+            <th className="sticky left-0 z-10 bg-gray-50 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-neutral-900 dark:text-gray-400">
               Tiêu đề
             </th>
             {columns.map((col) => (
               <th
                 key={col.name}
-                className="whitespace-nowrap px-4 py-2 text-left font-semibold"
+                className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
               >
                 {col.name}
               </th>
@@ -76,10 +76,15 @@ export default function TableView({
                   </a>
                 )}
               </td>
-              {columns.map((col) => (
-                <td key={col.name} className="whitespace-nowrap px-4 py-2">
+              {columns.map((col, i) => (
+                <td key={col.name} className="whitespace-nowrap px-4 py-2 align-top">
                   {editable ? (
-                    <EditableCell row={row} column={col} workspaceMembers={workspaceMembers} />
+                    <EditableCell
+                      row={row}
+                      column={col}
+                      workspaceMembers={workspaceMembers}
+                      align={i >= columns.length - 2 ? "right" : "left"}
+                    />
                   ) : (
                     <PropertyValue type={col.type} value={row.properties[col.name]} />
                   )}
