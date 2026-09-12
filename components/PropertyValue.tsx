@@ -1,7 +1,7 @@
 "use client";
 
 import type { PropertyType, Person } from "@/lib/notion";
-import { colorClasses } from "@/lib/colors";
+import { colorClasses, solidColorClasses } from "@/lib/colors";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -13,16 +13,42 @@ function formatDate(iso: string): string {
   });
 }
 
-export function Badge({ name, color }: { name: string; color?: string }) {
+export function Badge({
+  name,
+  color,
+  solid = true,
+}: {
+  name: string;
+  color?: string;
+  solid?: boolean;
+}) {
   return (
     <span
-      className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${colorClasses(
-        color
-      )}`}
+      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm ${
+        solid ? solidColorClasses(color) : colorClasses(color)
+      }`}
     >
       {name}
     </span>
   );
+}
+
+const AVATAR_PALETTE = [
+  "bg-rose-500",
+  "bg-orange-500",
+  "bg-amber-500",
+  "bg-emerald-500",
+  "bg-teal-500",
+  "bg-blue-500",
+  "bg-indigo-500",
+  "bg-purple-500",
+  "bg-pink-500",
+];
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
 }
 
 export function PeopleChips({ people }: { people: Person[] }) {
@@ -32,13 +58,17 @@ export function PeopleChips({ people }: { people: Person[] }) {
       {people.map((p) => (
         <span
           key={p.id}
-          className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-700/50 dark:text-gray-200"
+          className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 py-0.5 pl-0.5 pr-2 text-xs font-medium text-gray-700 dark:bg-gray-700/50 dark:text-gray-200"
         >
           {p.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.avatarUrl} alt="" className="h-4 w-4 rounded-full" />
+            <img src={p.avatarUrl} alt="" className="h-5 w-5 rounded-full" />
           ) : (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gray-300 text-[9px] dark:bg-gray-600">
+            <span
+              className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold text-white ${avatarColor(
+                p.name
+              )}`}
+            >
               {p.name.charAt(0).toUpperCase()}
             </span>
           )}

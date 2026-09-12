@@ -1,14 +1,23 @@
 "use client";
 
 import type { NotionRow, PropertySchema } from "@/lib/notion";
+import { borderColorClass } from "@/lib/colors";
 import PropertyValue from "./PropertyValue";
+
+function accentColorOf(row: NotionRow, accentProp?: PropertySchema): string | undefined {
+  if (!accentProp) return undefined;
+  const value = row.properties[accentProp.name] as { color?: string } | null;
+  return value?.color;
+}
 
 export default function TableView({
   rows,
   columns,
+  accentProp,
 }: {
   rows: NotionRow[];
   columns: PropertySchema[];
+  accentProp?: PropertySchema;
 }) {
   if (!rows.length) {
     return (
@@ -40,9 +49,13 @@ export default function TableView({
           {rows.map((row) => (
             <tr
               key={row.id}
-              className="hover:bg-gray-50 dark:hover:bg-neutral-900/60"
+              className="group hover:bg-gray-50 dark:hover:bg-neutral-900/60"
             >
-              <td className="sticky left-0 z-10 max-w-xs bg-white px-4 py-2 font-medium dark:bg-neutral-950">
+              <td
+                className={`sticky left-0 z-10 max-w-xs border-l-4 bg-white px-4 py-2 font-medium group-hover:bg-gray-50 dark:bg-neutral-950 dark:group-hover:bg-neutral-900/60 ${borderColorClass(
+                  accentColorOf(row, accentProp)
+                )}`}
+              >
                 <a
                   href={row.notionUrl}
                   target="_blank"

@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { NotionDataset, PropertySchema } from "@/lib/notion";
 import { groupableProperties, buildGroups } from "@/lib/group";
+import { hexForColor } from "@/lib/colors";
 import TableView from "./TableView";
 import BoardView from "./BoardView";
 import CalendarView from "./CalendarView";
@@ -153,8 +154,8 @@ export default function Dashboard({ dataset }: { dataset: NotionDataset }) {
           >
             <option value="">{prop.name}: Tất cả</option>
             {prop.options?.map((o) => (
-              <option key={o.name} value={o.name}>
-                {o.name}
+              <option key={o.name} value={o.name} style={{ color: hexForColor(o.color) }}>
+                ● {o.name}
               </option>
             ))}
           </select>
@@ -193,7 +194,9 @@ export default function Dashboard({ dataset }: { dataset: NotionDataset }) {
         </span>
       </div>
 
-      {view === "table" && <TableView rows={filteredRows} columns={tableColumns} />}
+      {view === "table" && (
+        <TableView rows={filteredRows} columns={tableColumns} accentProp={defaultGroupProp} />
+      )}
       {view === "board" &&
         (groupByProp ? (
           <BoardView groups={groups} cardColumns={boardCardColumns} />

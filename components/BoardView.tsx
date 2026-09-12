@@ -2,16 +2,26 @@
 
 import type { NotionRow, PropertySchema } from "@/lib/notion";
 import type { Group } from "@/lib/group";
-import { colorClasses } from "@/lib/colors";
+import { solidColorClasses, borderColorClass, tintBgColorClass, dotColorClass } from "@/lib/colors";
 import PropertyValue from "./PropertyValue";
 
-function Card({ row, columns }: { row: NotionRow; columns: PropertySchema[] }) {
+function Card({
+  row,
+  columns,
+  accentColor,
+}: {
+  row: NotionRow;
+  columns: PropertySchema[];
+  accentColor?: string;
+}) {
   return (
     <a
       href={row.notionUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-neutral-900"
+      className={`block rounded-lg border-l-4 border-y border-r border-y-gray-200 border-r-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-y-gray-800 dark:border-r-gray-800 dark:bg-neutral-900 ${borderColorClass(
+        accentColor
+      )}`}
     >
       <div className="mb-2 font-medium">{row.title}</div>
       <div className="flex flex-col gap-1 text-xs">
@@ -50,21 +60,33 @@ export default function BoardView({
       {groups.map((group) => (
         <div
           key={group.key}
-          className="w-72 shrink-0 rounded-lg bg-gray-100 p-3 dark:bg-neutral-900/60"
+          className={`w-72 shrink-0 rounded-lg border-t-4 p-3 ${borderColorClass(
+            group.color
+          )} ${tintBgColorClass(group.color)}`}
         >
           <div className="mb-3 flex items-center justify-between">
-            <span
-              className={`rounded-md px-2 py-0.5 text-xs font-semibold ${colorClasses(
-                group.color
-              )}`}
-            >
-              {group.label}
+            <span className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-full ${dotColorClass(group.color)}`} />
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm ${solidColorClasses(
+                  group.color
+                )}`}
+              >
+                {group.label}
+              </span>
             </span>
-            <span className="text-xs text-gray-400">{group.rows.length}</span>
+            <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-gray-500 dark:bg-black/20 dark:text-gray-300">
+              {group.rows.length}
+            </span>
           </div>
           <div className="flex flex-col gap-2">
             {group.rows.map((row) => (
-              <Card key={row.id} row={row} columns={cardColumns} />
+              <Card
+                key={row.id}
+                row={row}
+                columns={cardColumns}
+                accentColor={group.color}
+              />
             ))}
           </div>
         </div>
