@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import type { NotionRow, PropertySchema } from "@/lib/notion";
-import type { Group } from "@/lib/group";
+import { EMPTY_KEY, type Group } from "@/lib/group";
 import { solidColorClasses, borderColorClass, tintBgColorClass, dotColorClass } from "@/lib/colors";
 import PropertyValue from "./PropertyValue";
 
@@ -9,19 +10,34 @@ function Card({
   row,
   columns,
   accentColor,
+  draggable,
+  onDragStart,
+  onDragEnd,
+  isDragging,
 }: {
   row: NotionRow;
   columns: PropertySchema[];
   accentColor?: string;
+  draggable: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  isDragging: boolean;
 }) {
   return (
     <a
       href={row.notionUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className={`block rounded-lg border-l-4 border-y border-r border-y-gray-200 border-r-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-y-gray-800 dark:border-r-gray-800 dark:bg-neutral-900 ${borderColorClass(
-        accentColor
-      )}`}
+      draggable={draggable}
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", row.id);
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+      className={`block rounded-lg border-l-4 border-y border-r border-y-gray-200 border-r-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-y-gray-800 dark:border-r-gray-800 dark:bg-neutral-900 ${
+        draggable ? "cursor-grab active:cursor-grabbing" : ""
+      } ${isDragging ? "opacity-40" : ""} ${borderColorClass(accentColor)}`}
     >
       <div className="mb-2 font-medium">{row.title}</div>
       <div className="flex flex-col gap-1 text-xs">
@@ -43,10 +59,17 @@ function Card({
 export default function BoardView({
   groups,
   cardColumns,
+  draggable = false,
+  onDropRow,
 }: {
   groups: Group[];
   cardColumns: PropertySchema[];
+  draggable?: boolean;
+  onDropRow?: (rowId: string, newValue: string) => void;
 }) {
+  const [draggingRowId, setDraggingRowId] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
   if (!groups.length) {
     return (
       <div className="py-16 text-center text-gray-400">
@@ -60,9 +83,26 @@ export default function BoardView({
       {groups.map((group) => (
         <div
           key={group.key}
-          className={`w-72 shrink-0 rounded-lg border-t-4 p-3 ${borderColorClass(
+          onDragOver={(e) => {
+            if (!draggable) return;
+            e.preventDefault();
+            setDragOverKey(group.key);
+          }}
+          onDragLeave={() => setDragOverKey((k) => (k === group.key ? null : k))}
+          onDrop={(e) => {
+            if (!draggable) return;
+            e.preventDefault();
+            setDragOverKey(null);
+            const rowId = e.dataTransfer.getData("text/plain");
+            if (rowId && onDropRow) {
+              onDropRow(rowId, group.key === EMPTY_KEY ? "" : group.label);
+            }
+          }}
+          className={`w-72 shrink-0 rounded-lg border-t-4 p-3 transition-shadow ${borderColorClass(
             group.color
-          )} ${tintBgColorClass(group.color)}`}
+          )} ${tintBgColorClass(group.color)} ${
+            dragOverKey === group.key ? "ring-2 ring-blue-400 ring-inset" : ""
+          }`}
         >
           <div className="mb-3 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
@@ -79,13 +119,17 @@ export default function BoardView({
               {group.rows.length}
             </span>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex min-h-8 flex-col gap-2">
             {group.rows.map((row) => (
               <Card
                 key={row.id}
                 row={row}
                 columns={cardColumns}
                 accentColor={group.color}
+                draggable={draggable}
+                isDragging={draggingRowId === row.id}
+                onDragStart={() => setDraggingRowId(row.id)}
+                onDragEnd={() => setDraggingRowId(null)}
               />
             ))}
           </div>

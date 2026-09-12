@@ -82,6 +82,15 @@ export default function Dashboard({
     router.refresh();
   }
 
+  async function moveRow(rowId: string, propName: string, propType: string, value: string) {
+    await fetch(`/api/rows/${rowId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ property: propName, type: propType, value }),
+    });
+    router.refresh();
+  }
+
   const filteredRows = useMemo(() => {
     return dataset.rows.filter((row) => {
       if (
@@ -275,7 +284,25 @@ export default function Dashboard({
       )}
       {view === "board" &&
         (groupByProp ? (
-          <BoardView groups={groups} cardColumns={boardCardColumns} />
+          <>
+            {Boolean(currentUser) &&
+              (groupByProp.type === "select" || groupByProp.type === "status") && (
+                <p className="mb-3 text-xs text-gray-400">
+                  Kéo thẻ sang cột khác để đổi {groupByProp.name}.
+                </p>
+              )}
+            <BoardView
+              groups={groups}
+              cardColumns={boardCardColumns}
+              draggable={
+                Boolean(currentUser) &&
+                (groupByProp.type === "select" || groupByProp.type === "status")
+              }
+              onDropRow={(rowId, newValue) =>
+                moveRow(rowId, groupByProp.name, groupByProp.type, newValue)
+              }
+            />
+          </>
         ) : (
           <p className="text-gray-400">
             Database này không có cột phù hợp để nhóm theo Kanban.

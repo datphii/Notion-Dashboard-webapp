@@ -7,7 +7,7 @@ export interface Group {
   rows: NotionRow[];
 }
 
-const EMPTY_KEY = "__empty__";
+export const EMPTY_KEY = "__empty__";
 
 export function groupableProperties(schema: PropertySchema[]): PropertySchema[] {
   return schema.filter((p) =>
@@ -26,6 +26,13 @@ export function buildGroups(rows: NotionRow[], prop: PropertySchema): Group[] {
     }
     return g;
   };
+
+  // Seed every known option as its own (possibly empty) column up front -
+  // a Kanban grouped by Status should always show all defined statuses,
+  // not just the ones the current filter happens to match.
+  if (prop.type === "select" || prop.type === "status" || prop.type === "multi_select") {
+    for (const o of prop.options ?? []) ensure(o.name, o.name, o.color);
+  }
 
   for (const row of rows) {
     const value = row.properties[prop.name];
