@@ -39,8 +39,13 @@ export default function EditableCell({
   // paint stays invisible instead of flashing in the wrong spot.
   const [resolvedTop, setResolvedTop] = useState<number | null>(null);
 
+  // Cap the popover to fit narrow (mobile) viewports instead of a fixed
+  // width that could run off both edges of a small screen.
+  const popoverWidth = anchor
+    ? Math.min(POPOVER_WIDTH, window.innerWidth - MARGIN * 2)
+    : POPOVER_WIDTH;
   const left = anchor
-    ? Math.min(Math.max(MARGIN, anchor.left), window.innerWidth - POPOVER_WIDTH - MARGIN)
+    ? Math.min(Math.max(MARGIN, anchor.left), window.innerWidth - popoverWidth - MARGIN)
     : 0;
 
   useLayoutEffect(() => {
@@ -153,7 +158,7 @@ export default function EditableCell({
               style={{
                 top: resolvedTop ?? anchor.bottom + MARGIN,
                 left,
-                width: POPOVER_WIDTH,
+                width: popoverWidth,
                 visibility: resolvedTop === null ? "hidden" : "visible",
               }}
               className="fixed z-50 rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-neutral-900"

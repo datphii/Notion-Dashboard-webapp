@@ -10,9 +10,10 @@ import { hexForColor } from "@/lib/colors";
 import TableView from "./TableView";
 import BoardView from "./BoardView";
 import CalendarView from "./CalendarView";
+import StatsView from "./StatsView";
 import AddRowModal from "./AddRowModal";
 
-type ViewMode = "table" | "board" | "calendar";
+type ViewMode = "table" | "board" | "calendar" | "stats";
 
 function isFilterable(p: PropertySchema) {
   return p.type === "select" || p.type === "status" || p.type === "multi_select";
@@ -124,10 +125,10 @@ export default function Dashboard({
   );
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold sm:text-2xl">{dataset.databaseTitle}</h1>
+    <main className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6">
+      <header className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-bold sm:text-2xl">{dataset.databaseTitle}</h1>
           <a
             href={dataset.databaseUrl}
             target="_blank"
@@ -137,8 +138,10 @@ export default function Dashboard({
             Xem trong Notion ↗
           </a>
         </div>
-        <div className="flex items-center gap-3 text-xs text-gray-400">
-          <span suppressHydrationWarning>Cập nhật lúc {fetchedAtLabel ?? "..."}</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 sm:gap-3">
+          <span suppressHydrationWarning className="hidden sm:inline">
+            Cập nhật lúc {fetchedAtLabel ?? "..."}
+          </span>
           <button
             onClick={() => startTransition(() => router.refresh())}
             disabled={isPending}
@@ -147,7 +150,7 @@ export default function Dashboard({
             {isPending ? "Đang tải..." : "Làm mới"}
           </button>
           {currentUser ? (
-            <span className="flex items-center gap-2">
+            <span className="flex flex-wrap items-center gap-2">
               <span className="flex items-center rounded-full bg-gray-100 py-1 pl-2.5 pr-1 font-medium text-gray-600 dark:bg-neutral-800 dark:text-gray-300">
                 {currentUser.name}
                 {currentUser.role === "Admin" && (
@@ -182,19 +185,20 @@ export default function Dashboard({
         </div>
       </header>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-neutral-900">
-        <div className="flex rounded-lg border border-gray-300 p-0.5 dark:border-gray-700">
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-2.5 shadow-sm dark:border-gray-800 dark:bg-neutral-900 sm:p-3">
+        <div className="flex w-full overflow-x-auto rounded-lg border border-gray-300 p-0.5 dark:border-gray-700 sm:w-auto">
           {(
             [
               ["table", "Bảng"],
               ["board", "Kanban"],
               ["calendar", "Lịch"],
+              ["stats", "Thống kê"],
             ] as [ViewMode, string][]
           ).map(([mode, label]) => (
             <button
               key={mode}
               onClick={() => setView(mode)}
-              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+              className={`flex-1 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors sm:flex-none ${
                 view === mode
                   ? "bg-blue-600 text-white shadow-sm"
                   : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-neutral-800"
@@ -209,7 +213,7 @@ export default function Dashboard({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Tìm theo tiêu đề..."
-          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none transition-shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-neutral-950 dark:focus:ring-blue-950"
+          className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none transition-shadow focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-neutral-950 dark:focus:ring-blue-950 sm:w-auto"
         />
 
         {filterableProps.map((prop) => (
@@ -316,6 +320,7 @@ export default function Dashboard({
             Database này không có cột ngày tháng để hiển thị lịch.
           </p>
         ))}
+      {view === "stats" && <StatsView rows={filteredRows} schema={dataset.schema} />}
 
       {showAddModal && (
         <AddRowModal

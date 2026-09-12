@@ -73,7 +73,7 @@ export default function AddRowModal({
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={submit}
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl dark:bg-neutral-900"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-4 shadow-xl dark:bg-neutral-900 sm:p-6"
       >
         <h2 className="mb-4 text-lg font-bold">Thêm video mới</h2>
 

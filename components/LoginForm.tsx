@@ -37,7 +37,7 @@ export default function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mx-auto mt-24 w-full max-w-sm rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-neutral-900"
+      className="mx-auto mt-12 w-full max-w-sm rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-neutral-900 sm:mt-24"
     >
       <h1 className="mb-1 text-lg font-bold">Đăng nhập</h1>
       <p className="mb-5 text-sm text-gray-500">
