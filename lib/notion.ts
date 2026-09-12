@@ -54,12 +54,18 @@ export interface NotionDataset {
   fetchedAt: string;
 }
 
-function getClient() {
+export function getClient() {
   const token = process.env.NOTION_TOKEN;
   if (!token) {
     throw new Error("MISSING_NOTION_TOKEN");
   }
   return new Client({ auth: token });
+}
+
+function databaseId(): string {
+  const id = process.env.NOTION_DATABASE_ID;
+  if (!id) throw new Error("MISSING_NOTION_DATABASE_ID");
+  return id;
 }
 
 function mapPropertyType(notionType: string): PropertyType {
@@ -156,13 +162,10 @@ function extractProperty(prop: PageObjectResponse["properties"][string]): unknow
 }
 
 export async function fetchNotionDataset(): Promise<NotionDataset> {
-  const databaseId = process.env.NOTION_DATABASE_ID;
-  if (!databaseId) {
-    throw new Error("MISSING_NOTION_DATABASE_ID");
-  }
+  const dbId = databaseId();
   const notion = getClient();
 
-  const dbResponse = await notion.databases.retrieve({ database_id: databaseId });
+  const dbResponse = await notion.databases.retrieve({ database_id: dbId });
   if (!isFullDatabase(dbResponse)) {
     throw new Error("INCOMPLETE_DATABASE_RESPONSE");
   }
@@ -173,7 +176,7 @@ export async function fetchNotionDataset(): Promise<NotionDataset> {
   let cursor: string | undefined;
   do {
     const response = await notion.databases.query({
-      database_id: databaseId,
+      database_id: dbId,
       start_cursor: cursor,
       page_size: 100,
     });
@@ -200,4 +203,97 @@ export async function fetchNotionDataset(): Promise<NotionDataset> {
     rows,
     fetchedAt: new Date().toISOString(),
   };
+}
+
+export interface WorkspaceMember {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
+export async function getWorkspaceMembers(): Promise<WorkspaceMember[]> {
+  const notion = getClient();
+  const members: WorkspaceMember[] = [];
+  let cursor: string | undefined;
+  do {
+    const res = await notion.users.list({ start_cursor: cursor, page_size: 100 });
+    for (const user of res.results) {
+      if (user.type === "person") {
+        members.push({ id: user.id, name: user.name ?? "Unknown", avatarUrl: user.avatar_url });
+      }
+    }
+    cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
+  } while (cursor);
+  return members;
+}
+
+// Converts a simplified value (as produced by extractProperty / sent from the
+// client) back into a Notion API property payload for pages.update/create.
+export function buildPropertyPayload(type: PropertyType, value: unknown): Record<string, unknown> | null {
+  switch (type) {
+    case "title":
+      return { title: [{ text: { content: String(value ?? "") } }] };
+    case "rich_text":
+      return { rich_text: value ? [{ text: { content: String(value) } }] : [] };
+    case "select":
+      return { select: value ? { name: String(value) } : null };
+    case "status":
+      return { status: value ? { name: String(value) } : null };
+    case "multi_select":
+      return { multi_select: Array.isArray(value) ? value.map((name) => ({ name: String(name) })) : [] };
+    case "date": {
+      const v = value as { start: string; end?: string | null } | null;
+      return { date: v?.start ? { start: v.start, end: v.end || null } : null };
+    }
+    case "people": {
+      const ids = Array.isArray(value) ? (value as string[]) : [];
+      return { people: ids.map((id) => ({ id })) };
+    }
+    case "checkbox":
+      return { checkbox: Boolean(value) };
+    case "number":
+      return { number: value === null || value === "" ? null : Number(value) };
+    case "url":
+      return { url: value ? String(value) : null };
+    case "email":
+      return { email: value ? String(value) : null };
+    case "phone_number":
+      return { phone_number: value ? String(value) : null };
+    default:
+      return null;
+  }
+}
+
+export async function updateRow(
+  pageId: string,
+  propertyName: string,
+  propertyType: PropertyType,
+  value: unknown
+): Promise<void> {
+  const payload = buildPropertyPayload(propertyType, value);
+  if (!payload) throw new Error("UNSUPPORTED_PROPERTY_TYPE");
+  const notion = getClient();
+  await notion.pages.update({
+    page_id: pageId,
+    // The SDK's property types are a strict discriminated union keyed by
+    // property name; we build these payloads dynamically from the live
+    // database schema, so a structural cast here is the pragmatic choice.
+    properties: { [propertyName]: payload } as Parameters<typeof notion.pages.update>[0]["properties"],
+  });
+}
+
+export async function createRow(
+  fields: { name: string; type: PropertyType; value: unknown }[]
+): Promise<string> {
+  const notion = getClient();
+  const properties: Record<string, unknown> = {};
+  for (const field of fields) {
+    const payload = buildPropertyPayload(field.type, field.value);
+    if (payload) properties[field.name] = payload;
+  }
+  const page = await notion.pages.create({
+    parent: { database_id: databaseId() },
+    properties: properties as Parameters<typeof notion.pages.create>[0]["properties"],
+  });
+  return page.id;
 }

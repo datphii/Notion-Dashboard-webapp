@@ -1,4 +1,5 @@
-import { fetchNotionDataset } from "@/lib/notion";
+import { fetchNotionDataset, getWorkspaceMembers } from "@/lib/notion";
+import { getCurrentUser } from "@/lib/auth";
 import Dashboard from "@/components/Dashboard";
 
 // Render on every request instead of at build time: this is a public,
@@ -37,5 +38,10 @@ export default async function Home() {
     );
   }
 
-  return <Dashboard dataset={dataset} />;
+  const currentUser = await getCurrentUser();
+  const workspaceMembers = currentUser ? await getWorkspaceMembers().catch(() => []) : [];
+
+  return (
+    <Dashboard dataset={dataset} currentUser={currentUser} workspaceMembers={workspaceMembers} />
+  );
 }

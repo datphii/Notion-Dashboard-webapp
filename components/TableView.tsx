@@ -1,8 +1,9 @@
 "use client";
 
-import type { NotionRow, PropertySchema } from "@/lib/notion";
+import type { NotionRow, PropertySchema, WorkspaceMember } from "@/lib/notion";
 import { borderColorClass } from "@/lib/colors";
 import PropertyValue from "./PropertyValue";
+import EditableCell from "./EditableCell";
 
 function accentColorOf(row: NotionRow, accentProp?: PropertySchema): string | undefined {
   if (!accentProp) return undefined;
@@ -14,10 +15,16 @@ export default function TableView({
   rows,
   columns,
   accentProp,
+  titleProp,
+  editable,
+  workspaceMembers,
 }: {
   rows: NotionRow[];
   columns: PropertySchema[];
   accentProp?: PropertySchema;
+  titleProp?: PropertySchema;
+  editable?: boolean;
+  workspaceMembers?: WorkspaceMember[];
 }) {
   if (!rows.length) {
     return (
@@ -56,18 +63,26 @@ export default function TableView({
                   accentColorOf(row, accentProp)
                 )}`}
               >
-                <a
-                  href={row.notionUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  {row.title}
-                </a>
+                {editable && titleProp ? (
+                  <EditableCell row={row} column={titleProp} />
+                ) : (
+                  <a
+                    href={row.notionUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {row.title}
+                  </a>
+                )}
               </td>
               {columns.map((col) => (
                 <td key={col.name} className="whitespace-nowrap px-4 py-2">
-                  <PropertyValue type={col.type} value={row.properties[col.name]} />
+                  {editable ? (
+                    <EditableCell row={row} column={col} workspaceMembers={workspaceMembers} />
+                  ) : (
+                    <PropertyValue type={col.type} value={row.properties[col.name]} />
+                  )}
                 </td>
               ))}
             </tr>

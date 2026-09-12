@@ -2,12 +2,15 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { NotionDataset, PropertySchema } from "@/lib/notion";
+import Link from "next/link";
+import type { NotionDataset, PropertySchema, WorkspaceMember } from "@/lib/notion";
+import type { SessionPayload } from "@/lib/session";
 import { groupableProperties, buildGroups } from "@/lib/group";
 import { hexForColor } from "@/lib/colors";
 import TableView from "./TableView";
 import BoardView from "./BoardView";
 import CalendarView from "./CalendarView";
+import AddRowModal from "./AddRowModal";
 
 type ViewMode = "table" | "board" | "calendar";
 
@@ -15,12 +18,21 @@ function isFilterable(p: PropertySchema) {
   return p.type === "select" || p.type === "status" || p.type === "multi_select";
 }
 
-export default function Dashboard({ dataset }: { dataset: NotionDataset }) {
+export default function Dashboard({
+  dataset,
+  currentUser,
+  workspaceMembers,
+}: {
+  dataset: NotionDataset;
+  currentUser: SessionPayload | null;
+  workspaceMembers: WorkspaceMember[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [view, setView] = useState<ViewMode>("table");
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const filterableProps = useMemo(
     () => dataset.schema.filter(isFilterable),
@@ -46,6 +58,13 @@ export default function Dashboard({ dataset }: { dataset: NotionDataset }) {
   );
 
   const tableColumns = dataset.schema.filter((p) => p.type !== "title");
+  const titleProp = dataset.schema.find((p) => p.type === "title");
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+    router.refresh();
+  }
 
   const filteredRows = useMemo(() => {
     return dataset.rows.filter((row) => {
@@ -110,6 +129,39 @@ export default function Dashboard({ dataset }: { dataset: NotionDataset }) {
           >
             {isPending ? "Đang tải..." : "Làm mới"}
           </button>
+          {currentUser ? (
+            <span className="flex items-center gap-2">
+              <span className="font-medium text-gray-600 dark:text-gray-300">
+                {currentUser.name}
+                {currentUser.role === "Admin" && (
+                  <span className="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+                    Admin
+                  </span>
+                )}
+              </span>
+              {currentUser.role === "Admin" && (
+                <Link
+                  href="/admin/users"
+                  className="rounded-md border border-gray-300 px-2 py-1 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-neutral-800"
+                >
+                  Quản lý tài khoản
+                </Link>
+              )}
+              <button
+                onClick={logout}
+                className="rounded-md border border-gray-300 px-2 py-1 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-neutral-800"
+              >
+                Đăng xuất
+              </button>
+            </span>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-md border border-gray-300 px-3 py-1 font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-neutral-800"
+            >
+              Đăng nhập
+            </Link>
+          )}
         </div>
       </header>
 
@@ -189,13 +241,29 @@ export default function Dashboard({ dataset }: { dataset: NotionDataset }) {
           </select>
         )}
 
+        {currentUser && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
+          >
+            + Thêm video
+          </button>
+        )}
+
         <span className="ml-auto text-xs text-gray-400">
           {filteredRows.length} / {dataset.rows.length} mục
         </span>
       </div>
 
       {view === "table" && (
-        <TableView rows={filteredRows} columns={tableColumns} accentProp={defaultGroupProp} />
+        <TableView
+          rows={filteredRows}
+          columns={tableColumns}
+          accentProp={defaultGroupProp}
+          titleProp={titleProp}
+          editable={Boolean(currentUser)}
+          workspaceMembers={workspaceMembers}
+        />
       )}
       {view === "board" &&
         (groupByProp ? (
@@ -213,6 +281,14 @@ export default function Dashboard({ dataset }: { dataset: NotionDataset }) {
             Database này không có cột ngày tháng để hiển thị lịch.
           </p>
         ))}
+
+      {showAddModal && (
+        <AddRowModal
+          schema={dataset.schema}
+          workspaceMembers={workspaceMembers}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
     </main>
   );
 }

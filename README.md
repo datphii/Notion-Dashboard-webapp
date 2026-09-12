@@ -1,8 +1,10 @@
 # Notion Dashboard Webapp
 
 Webapp Next.js hiển thị dữ liệu của **một database Notion** dưới nhiều kiểu view khác nhau
-(Bảng / Kanban / Lịch), tương tự các view bạn đã tạo trong Notion — nhưng public, không cần
-đăng nhập, và không tốn suất "guest" của gói Notion Free.
+(Bảng / Kanban / Lịch), tương tự các view bạn đã tạo trong Notion — public, ai có link cũng xem
+được không cần đăng nhập. Người có tài khoản (Tên + mã PIN, quản lý ở trang Admin riêng) có thể
+đăng nhập để **sửa mọi trường và thêm video mới** trực tiếp từ webapp — tất cả không tốn suất
+"guest" của gói Notion Free.
 
 ## Vì sao dùng cách này thay vì mời cộng tác viên vào Notion?
 
@@ -17,16 +19,20 @@ không bao giờ thấy API key.
 ## 1. Tạo Notion Integration
 
 1. Vào https://www.notion.so/my-integrations → **New integration**.
-2. Đặt tên (vd: `Dashboard Reader`), chọn đúng workspace chứa database cần track, capability chỉ
-   cần **Read content**.
-3. Sau khi tạo, copy **Internal Integration Secret** (dạng `ntn_...` hoặc `secret_...`).
+2. Đặt tên (vd: `Dashboard Reader`), chọn đúng workspace chứa database cần track.
+3. Ở tab **Capabilities**, tick cả 3: **Read content**, **Insert content**, **Update content**
+   (2 cái sau bắt buộc để tính năng sửa/thêm video hoạt động).
+4. Sau khi tạo, copy **Internal Integration Secret** (dạng `ntn_...` hoặc `secret_...`).
 
 ## 2. Share database với integration
 
-1. Mở database "Video Production Tracker" (hoặc database bạn muốn hiển thị) trong Notion.
-2. Bấm **...** (góc trên phải) → **Connections** → chọn integration vừa tạo ở bước 1.
+Làm bước này cho **cả 2 database**:
 
-Đây là bước bắt buộc — nếu không share, integration sẽ không đọc được dữ liệu (403 Unauthorized).
+1. Database chính (vd "Video Production Tracker"): mở → **...** (góc trên phải) → **Connections**
+   → chọn integration vừa tạo.
+2. Database "🔐 Web Dashboard Users" (chứa tài khoản đăng nhập webapp): làm tương tự.
+
+Đây là bước bắt buộc — nếu không share, integration sẽ không đọc/ghi được dữ liệu (403/401).
 
 ## 3. Lấy Database ID
 
@@ -42,7 +48,7 @@ https://www.notion.so/myworkspace/f45d4efbbd2041449a646e3a41153ef1?v=...
 
 ```bash
 cp .env.example .env.local
-# rồi điền NOTION_TOKEN và NOTION_DATABASE_ID vào .env.local
+# rồi điền đủ 4 biến vào .env.local (xem bước 5 để biết cách lấy từng giá trị)
 npm install
 npm run dev
 ```
@@ -53,13 +59,16 @@ Mở http://localhost:3000.
 
 1. Push repo này lên GitHub (đã có sẵn nếu bạn nhận repo từ Claude Code).
 2. Vào https://vercel.com/new → **Import Git Repository** → chọn repo này.
-3. Ở bước cấu hình, thêm 2 **Environment Variables**:
+3. Ở bước cấu hình, thêm 4 **Environment Variables**:
    - `NOTION_TOKEN` = Internal Integration Secret ở bước 1
-   - `NOTION_DATABASE_ID` = Database ID ở bước 3
+   - `NOTION_DATABASE_ID` = Database ID của database chính ở bước 3
+   - `NOTION_USERS_DATABASE_ID` = Database ID của database "🔐 Web Dashboard Users"
+   - `SESSION_SECRET` = một chuỗi ngẫu nhiên bất kỳ, dùng để ký cookie đăng nhập. Tạo bằng:
+     `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 4. Bấm **Deploy**. Sau khi xong bạn sẽ có một link dạng `https://<project>.vercel.app` — public,
    ai có link cũng xem được, không cần đăng nhập.
 
-Vercel free tier là đủ cho nhu cầu này (Next.js server components + revalidate 60s).
+Vercel free tier là đủ cho nhu cầu này.
 
 ## Các view có trong app
 
@@ -74,6 +83,25 @@ Vercel free tier là đủ cho nhu cầu này (Next.js server components + reval
 Mỗi lần có người mở trang, server sẽ gọi Notion API lấy dữ liệu mới nhất (không cache), hoặc
 bấm nút **Làm mới** để tải lại ngay.
 
+## Đăng nhập, chỉnh sửa và quản lý tài khoản
+
+Trang chính vẫn public — ai có link cũng xem được, không cần đăng nhập. Muốn **sửa dữ liệu hoặc
+thêm video mới**, cần đăng nhập bằng Tên + mã PIN ở trang `/login`.
+
+- Tài khoản đăng nhập được lưu trong database Notion phụ **"🔐 Web Dashboard Users"** (đã tạo sẵn
+  cùng lúc với repo này), hoàn toàn tách biệt với danh sách thành viên workspace Notion — không
+  ảnh hưởng tới giới hạn của gói Free.
+- Mọi thao tác ghi vào Notion (sửa/thêm) đều đi qua **cùng một** integration token phía server;
+  Notion chỉ thấy integration đó thực hiện thay đổi, không phân biệt người dùng webapp nào.
+- Đã có sẵn 1 tài khoản Admin khởi tạo: **Tên `Admin`, PIN `1234`** — hãy đăng nhập rồi vào
+  **"Quản lý tài khoản"** để đổi PIN này ngay, hoặc sửa trực tiếp trong database Notion
+  "🔐 Web Dashboard Users".
+- Trang **Quản lý tài khoản** (`/admin/users`, chỉ Admin truy cập được) cho phép thêm/sửa/xoá tài
+  khoản, đổi vai trò Admin/Editor, bật/tắt Active — không cần sửa code hay redeploy.
+- Ở Bảng, khi đã đăng nhập, bấm vào 1 ô để sửa (chọn giá trị có sẵn hoặc gõ giá trị mới cho các
+  cột dạng select), bấm **+ Thêm video** để tạo mục mới.
+- Kanban và Lịch hiện vẫn ở chế độ chỉ xem; sửa dữ liệu thực hiện ở view Bảng.
+
 ## Thêm database khác / nhiều database
 
 Bản hiện tại hiển thị 1 database (theo `NOTION_DATABASE_ID`). Muốn thêm database khác, có thể
@@ -82,9 +110,11 @@ nhân bản `app/page.tsx` thành route riêng (vd: `app/[database]/page.tsx`) v
 ## Cấu trúc project
 
 ```
-app/            Next.js App Router pages
-components/     UI components (client-side)
-lib/notion.ts   Gọi Notion API + transform dữ liệu
-lib/group.ts    Logic nhóm dữ liệu cho Kanban view
-lib/colors.ts   Map màu Notion sang Tailwind classes
+app/                    Next.js App Router pages + API routes
+components/             UI components (client-side)
+lib/notion.ts           Gọi Notion API (đọc + ghi) + transform dữ liệu
+lib/users.ts            Đọc/ghi database "Web Dashboard Users"
+lib/session.ts, auth.ts Ký/xác thực cookie đăng nhập
+lib/group.ts            Logic nhóm dữ liệu cho Kanban view
+lib/colors.ts           Map màu Notion sang Tailwind classes
 ```
