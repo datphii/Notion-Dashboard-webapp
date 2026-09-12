@@ -1,28 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { NotionRow, PropertySchema, WorkspaceMember } from "@/lib/notion";
 import { toEditValue } from "@/lib/editValue";
 import PropertyValue from "./PropertyValue";
 import PropertyEditor from "./PropertyEditor";
 
+const POPOVER_WIDTH = 256; // px, matches w-64
+
 export default function EditableCell({
   row,
   column,
   workspaceMembers,
-  align = "left",
 }: {
   row: NotionRow;
   column: PropertySchema;
   workspaceMembers?: WorkspaceMember[];
-  align?: "left" | "right";
 }) {
   const router = useRouter();
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localValue, setLocalValue] = useState<unknown>(null);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
 
   async function save() {
     setSaving(true);
@@ -69,15 +72,27 @@ export default function EditableCell({
     );
   }
 
+  function openEditor() {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) {
+      let left = rect.left;
+      // Keep the popover on-screen instead of running off the right edge.
+      if (left + POPOVER_WIDTH > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - POPOVER_WIDTH - 8);
+      }
+      setPopoverPos({ top: rect.bottom + 4, left });
+    }
+    setLocalValue(toEditValue(column.type, row.properties[column.name]));
+    setError(null);
+    setEditing(true);
+  }
+
   return (
-    <div className="relative">
+    <>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => {
-          setLocalValue(toEditValue(column.type, row.properties[column.name]));
-          setError(null);
-          setEditing(true);
-        }}
+        onClick={openEditor}
         className="group/cell flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-blue-50 dark:hover:bg-blue-950/30"
         title="Bấm để chỉnh sửa"
       >
@@ -93,46 +108,51 @@ export default function EditableCell({
         </svg>
       </button>
 
-      {editing && (
-        <>
-          {/* Full-screen backdrop, click-to-cancel; keeps the popover from
-              disturbing table layout since it sits outside normal flow. */}
-          <div className="fixed inset-0 z-30" onClick={() => setEditing(false)} />
-          <div
-            className={`absolute top-full z-40 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-neutral-900 ${
-              align === "right" ? "right-0" : "left-0"
-            }`}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
-          >
-            <PropertyEditor
-              type={column.type}
-              options={column.options}
-              value={localValue}
-              onChange={setLocalValue}
-              workspaceMembers={workspaceMembers}
-              listId={`dl-${row.id}-${column.name}`}
-            />
-            {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
-            <div className="mt-2 flex gap-1.5">
-              <button
-                onClick={save}
-                disabled={saving}
-                className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
-              >
-                {saving ? "Đang lưu..." : "Lưu"}
-              </button>
-              <button
-                onClick={() => setEditing(false)}
-                disabled={saving}
-                className="rounded-md border border-gray-300 px-2.5 py-1 text-xs hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-neutral-800"
-              >
-                Huỷ
-              </button>
+      {editing &&
+        popoverPos &&
+        createPortal(
+          <>
+            {/* Full-screen backdrop, click-to-cancel. The popover itself is
+                fixed-positioned from the trigger button's real on-screen
+                rect, so it always anchors right under the clicked cell no
+                matter how tall that cell's wrapped content is, and never
+                disturbs the table's own layout. */}
+            <div className="fixed inset-0 z-40" onClick={() => setEditing(false)} />
+            <div
+              style={{ top: popoverPos.top, left: popoverPos.left, width: POPOVER_WIDTH }}
+              className="fixed z-50 rounded-lg border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-neutral-900"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+            >
+              <PropertyEditor
+                type={column.type}
+                options={column.options}
+                value={localValue}
+                onChange={setLocalValue}
+                workspaceMembers={workspaceMembers}
+                listId={`dl-${row.id}-${column.name}`}
+              />
+              {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
+              <div className="mt-2 flex gap-1.5">
+                <button
+                  onClick={save}
+                  disabled={saving}
+                  className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                >
+                  {saving ? "Đang lưu..." : "Lưu"}
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                  className="rounded-md border border-gray-300 px-2.5 py-1 text-xs hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-neutral-800"
+                >
+                  Huỷ
+                </button>
+              </div>
             </div>
-          </div>
-        </>
-      )}
-    </div>
+          </>,
+          document.body
+        )}
+    </>
   );
 }

@@ -76,15 +76,10 @@ export default function TableView({
                   </a>
                 )}
               </td>
-              {columns.map((col, i) => (
+              {columns.map((col) => (
                 <td key={col.name} className="whitespace-nowrap px-4 py-2 align-top">
                   {editable ? (
-                    <EditableCell
-                      row={row}
-                      column={col}
-                      workspaceMembers={workspaceMembers}
-                      align={i >= columns.length - 2 ? "right" : "left"}
-                    />
+                    <EditableCell row={row} column={col} workspaceMembers={workspaceMembers} />
                   ) : (
                     <PropertyValue type={col.type} value={row.properties[col.name]} />
                   )}
