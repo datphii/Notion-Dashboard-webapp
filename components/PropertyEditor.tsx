@@ -1,9 +1,110 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { PropertyType, SelectOption, WorkspaceMember } from "@/lib/notion";
 
 const inputClass =
   "w-full rounded-md border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-neutral-950";
+
+// Native <input list=datalist> only suggests options that still match the
+// current text, so once a value is already selected the browser hides every
+// other option - this reimplements the combobox by hand so the full list is
+// always browsable, both when creating a new item and when editing one.
+function SelectCombobox({
+  options,
+  value,
+  onChange,
+}: {
+  options: SelectOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  const filtered = query.trim()
+    ? options.filter((o) => o.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : options;
+  const exactMatch = options.some((o) => o.name.toLowerCase() === query.trim().toLowerCase());
+
+  function select(name: string) {
+    onChange(name);
+    setQuery("");
+    setOpen(false);
+  }
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <input
+        className={inputClass}
+        value={open ? query : value ?? ""}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        placeholder="Chọn hoặc nhập giá trị mới..."
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (query.trim()) select(query.trim());
+          } else if (e.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+      />
+      {open && (
+        <div className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-neutral-900">
+          {value && (
+            <button
+              type="button"
+              onClick={() => select("")}
+              className="block w-full px-2 py-1.5 text-left text-xs text-gray-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
+            >
+              — Xoá giá trị —
+            </button>
+          )}
+          {filtered.map((o) => (
+            <button
+              key={o.name}
+              type="button"
+              onClick={() => select(o.name)}
+              className={`block w-full truncate px-2 py-1.5 text-left text-sm hover:bg-blue-50 dark:hover:bg-neutral-800 ${
+                o.name === value ? "bg-blue-50 font-medium dark:bg-neutral-800" : ""
+              }`}
+            >
+              {o.name}
+            </button>
+          ))}
+          {filtered.length === 0 && !query.trim() && (
+            <p className="px-2 py-1.5 text-xs text-gray-400">Chưa có lựa chọn nào.</p>
+          )}
+          {query.trim() && !exactMatch && (
+            <button
+              type="button"
+              onClick={() => select(query.trim())}
+              className="block w-full border-t border-gray-100 px-2 py-1.5 text-left text-sm text-blue-600 hover:bg-blue-50 dark:border-gray-800 dark:text-blue-400 dark:hover:bg-neutral-800"
+            >
+              + Tạo mới &quot;{query.trim()}&quot;
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function PropertyEditor({
   type,
@@ -68,20 +169,7 @@ export default function PropertyEditor({
     case "select":
     case "status":
       return (
-        <>
-          <input
-            className={inputClass}
-            list={listId}
-            value={(value as string) ?? ""}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="Chọn hoặc nhập giá trị mới..."
-          />
-          <datalist id={listId}>
-            {options?.map((o) => (
-              <option key={o.name} value={o.name} />
-            ))}
-          </datalist>
-        </>
+        <SelectCombobox options={options ?? []} value={(value as string) ?? ""} onChange={onChange} />
       );
 
     case "multi_select": {

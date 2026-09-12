@@ -50,13 +50,21 @@ export default function EditableCell({
 
   useLayoutEffect(() => {
     if (!anchor || !popoverRef.current) return;
-    const height = popoverRef.current.offsetHeight;
-    const fitsBelow = anchor.bottom + MARGIN + height <= window.innerHeight - MARGIN;
-    setResolvedTop(
-      fitsBelow
-        ? anchor.bottom + MARGIN
-        : Math.max(MARGIN, anchor.top - MARGIN - height)
-    );
+    const el = popoverRef.current;
+    // Re-measure whenever the popover's own size changes too (e.g. the
+    // select combobox's dropdown opening below the input), not just once on
+    // mount, so it keeps flipping above the cell if it no longer fits below.
+    function reposition() {
+      const height = el.offsetHeight;
+      const fitsBelow = anchor!.bottom + MARGIN + height <= window.innerHeight - MARGIN;
+      setResolvedTop(
+        fitsBelow ? anchor!.bottom + MARGIN : Math.max(MARGIN, anchor!.top - MARGIN - height)
+      );
+    }
+    reposition();
+    const ro = new ResizeObserver(reposition);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [anchor]);
 
   async function save() {
